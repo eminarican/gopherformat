@@ -7,6 +7,9 @@ import java.util.regex.Pattern
 
 object FormatHelper {
 
+    const val TAG_START_SIZE = "<>".length
+    const val TAG_END_SIZE = "</>".length
+
     private val pattern: Pattern = Pattern.compile("<(\\w+)>(.*?)</\\1>")
 
     val colorCode = mapOf(
@@ -47,8 +50,8 @@ object FormatHelper {
 
             val rangeOut = TextRange(matcher.start(), matcher.end())
             val rangeIn = TextRange(
-                rangeOut.startOffset + key.length + 2,
-                rangeOut.endOffset - key.length - 3
+                rangeOut.startOffset + key.length + TAG_START_SIZE,
+                rangeOut.endOffset - key.length - TAG_END_SIZE
             )
 
             val content = text.substring(rangeIn.startOffset, rangeIn.endOffset)

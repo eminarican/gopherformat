@@ -19,10 +19,12 @@ class FormatFoldingBuilder : FoldingBuilder {
 
             FormatHelper.iterate(element.text, element.textRange.startOffset) { rangeOut, _, key, offset ->
                 descriptors.add(FoldingDescriptor(element.node, TextRange(
-                    rangeOut.startOffset + offset, rangeOut.startOffset + key.length + 2 + offset
+                    rangeOut.startOffset + offset,
+                    rangeOut.startOffset + offset + key.length + FormatHelper.TAG_START_SIZE,
                 ), foldGroup, ""))
                 descriptors.add(FoldingDescriptor(element.node, TextRange(
-                    rangeOut.endOffset - key.length - 3 + offset, rangeOut.endOffset + offset
+                    rangeOut.endOffset + offset - key.length - FormatHelper.TAG_END_SIZE,
+                    rangeOut.endOffset + offset,
                 ), foldGroup, ""))
                 false
             }
