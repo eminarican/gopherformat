@@ -5,7 +5,6 @@ gophertunnel text tag preview plugin for goland
 todo:
   - hide tags when not clicked
   - write a better readme :=
-  - add plugin logo
 
 note:
   idk when i could complete these since\
