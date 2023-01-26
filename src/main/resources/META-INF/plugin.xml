@@ -1,0 +1,16 @@
+<idea-plugin>
+    <id>com.eminarican.GopherFormat</id>
+
+    <name>GopherFormat</name>
+
+    <vendor email="emin.arican@outlook.com">Emin Arıcan</vendor>
+
+    <description>color tags highlighter plugin for gophertunnel</description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.plugins.go</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <annotator language="go" implementationClass="com.eminarican.gopherformat.GopherFormat"/>
+    </extensions>
+</idea-plugin>
