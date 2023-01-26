@@ -43,11 +43,12 @@ class GopherFormat : Annotator {
 
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
         if (element !is GoStringLiteral) return
-        highlight(holder, element.text, element.textRange.startOffset)
+        highlight(holder, element.text, element.textRange.startOffset, false)
     }
 
-    private fun highlight(holder: AnnotationHolder, text: String, offset: Int) {
+    private fun highlight(holder: AnnotationHolder, text: String, offset: Int, mixed: Boolean) {
         val matcher = pattern.matcher(text)
+        var mixed = mixed
 
         while (matcher.find()) {
             val key = matcher.group(1)
@@ -62,9 +63,12 @@ class GopherFormat : Annotator {
 
             if (
                 !setColor(holder, key, rangeOut.shiftRight(offset))
-                && !setFont(holder, key, rangeOut.shiftRight(offset))
+                && !setFont(holder, key, rangeOut.shiftRight(offset), mixed).let {
+                    if (it) mixed = it
+                    return@let it
+                }
             ) continue
-            highlight(holder, content, rangeIn.startOffset + offset)
+            highlight(holder, content, rangeIn.startOffset + offset, mixed)
         }
     }
 
@@ -76,9 +80,13 @@ class GopherFormat : Annotator {
         return false
     }
 
-    private fun setFont(holder: AnnotationHolder, key: String, range: TextRange): Boolean {
+    private fun setFont(holder: AnnotationHolder, key: String, range: TextRange, mixed: Boolean): Boolean {
         fontCode[key]?.let {
-            createAnnotation(holder, range, fontType = it)
+            createAnnotation(holder, range, fontType = if(!mixed) {
+                it
+            } else {
+                Font.BOLD + Font.ITALIC
+            })
             return true
         }
         return false

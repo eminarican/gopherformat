@@ -3,7 +3,6 @@
 gophertunnel text tag preview plugin for goland
 
 todo:
-  - fix preview of multiple font wraps
   - hide tags when not clicked
   - write a better readme :=
   - add plugin logo
