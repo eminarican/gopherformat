@@ -19,7 +19,7 @@ class FormatAnnotator : Annotator {
         FormatHelper.iterate(element.text, element.textRange.startOffset) { rangeOut, _, key, offset ->
             !setColor(holder, key, rangeOut.shiftRight(offset))
             && !setFont(holder, key, rangeOut.shiftRight(offset), mixed).let {
-                if (it) mixed = it
+                if (it) mixed = true
                 return@let it
             }
         }
@@ -35,10 +35,10 @@ class FormatAnnotator : Annotator {
 
     private fun setFont(holder: AnnotationHolder, key: String, range: TextRange, mixed: Boolean): Boolean {
         FormatHelper.fontCode[key]?.let {
-            createAnnotation(holder, range, fontType = if(!mixed) {
-                it
-            } else {
+            createAnnotation(holder, range, fontType = if(mixed) {
                 Font.BOLD + Font.ITALIC
+            } else {
+                it
             })
             return true
         }
