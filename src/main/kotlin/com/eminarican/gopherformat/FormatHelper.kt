@@ -10,7 +10,7 @@ object FormatHelper {
     const val TAG_START_SIZE = "<>".length
     const val TAG_END_SIZE = "</>".length
 
-    private val pattern: Pattern = Pattern.compile("<(\\w+)>(.*?)</\\1>")
+    private val pattern: Pattern = Pattern.compile("<([\\w-]+)>(.*?)</\\1>")
 
     val colorCode = mapOf(
         "black" to Color(0, 0, 0),
