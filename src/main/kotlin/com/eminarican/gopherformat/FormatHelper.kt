@@ -1,67 +1,36 @@
 package com.eminarican.gopherformat
 
+import com.goide.psi.GoCallExpr
+import com.intellij.lang.annotation.AnnotationBuilder
+import com.intellij.lang.annotation.AnnotationHolder
+import com.intellij.lang.annotation.HighlightSeverity
+import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.PsiElementProcessor
 import com.intellij.psi.util.PsiTreeUtil
 import java.awt.Color
 import java.awt.Font
-import java.util.regex.Pattern
 
 object FormatHelper {
-
-    const val TAG_START_SIZE = "<>".length
-    const val TAG_END_SIZE = "</>".length
-
-    private val holderPattern: Pattern = Pattern.compile("%v")
-    private val tagPattern: Pattern = Pattern.compile("<([\\w-]+)>(.*?)</\\1>")
-
-    val colorCode = mapOf(
-        "black" to Color(0, 0, 0),
-
-        "red" to Color(255, 85, 85),
-        "gold" to Color(255, 170, 0),
-        "blue" to Color(85, 85, 255),
-        "green" to Color(85, 255, 85),
-        "aqua" to Color(85, 255, 255),
-        "grey" to Color(170, 170, 170),
-        "purple" to Color(255, 85, 255),
-        "yellow" to Color(255, 255, 85),
-        "white" to Color(255, 255, 255),
-
-        "dark-red" to Color(170, 0, 0),
-        "dark-blue" to Color(0, 0, 170),
-        "dark-green" to Color(0, 170, 0),
-        "dark-grey" to Color(85, 85, 85),
-        "dark-aqua" to Color(0, 170, 170),
-        "dark-purple" to Color(170, 0, 170),
-        "dark-yellow" to Color(221, 214, 5),
-    )
-
-    val fontCode = mapOf(
-        "bold" to Font.BOLD,
-        "italic" to Font.ITALIC,
-    )
 
     fun iterateTags(
         text: String, offset: Int,
         callback: (rangeOut: TextRange, rangeIn: TextRange, key: String, offset: Int) -> Boolean
     ) {
-        val matcher = tagPattern.matcher(text)
+        FormatData.TagPattern.matcher(text).results().forEach {
+            val key = it.group(1)
 
-        while (matcher.find()) {
-            val key = matcher.group(1)
-
-            val rangeOut = TextRange(matcher.start(), matcher.end())
+            val rangeOut = TextRange(it.start(), it.end())
             val rangeIn = TextRange(
-                rangeOut.startOffset + key.length + TAG_START_SIZE,
-                rangeOut.endOffset - key.length - TAG_END_SIZE
+                rangeOut.startOffset + key.length + FormatData.TAG_START_SIZE,
+                rangeOut.endOffset - key.length - FormatData.TAG_END_SIZE
             )
 
             val content = text.substring(rangeIn.startOffset, rangeIn.endOffset)
-            if (callback(rangeOut, rangeIn, key, offset)) continue
-
-            iterateTags(content, rangeIn.startOffset + offset, callback)
+            if (!callback(rangeOut, rangeIn, key, offset)) {
+                iterateTags(content, rangeIn.startOffset + offset, callback)
+            }
         }
     }
 
@@ -69,10 +38,30 @@ object FormatHelper {
         text: String, offset: Int,
         callback: (range: TextRange) -> Unit
     ) {
-        val matcher = holderPattern.matcher(text)
+        FormatData.HolderPattern.matcher(text).results().forEach {
+            callback(TextRange(it.start(), it.end()).shiftRight(offset))
+        }
+    }
 
-        while (matcher.find()) {
-            callback(TextRange(matcher.start(), matcher.end()).shiftRight(offset))
+    fun iterateSymbols(
+        expression: GoCallExpr,
+        callback: (ok: Boolean, range: TextRange, index: Int, count: Int) -> Unit
+    ) {
+        val expressions = expression.argumentList.expressionList
+        val first = expressions.first() ?: return
+
+        first.value?.string?.let { value ->
+            val verbCount = value.split(FormatData.HolderPattern).size - 1
+            if (verbCount < 1) return
+
+            val argCount = expressions.size - 2
+            if (verbCount == argCount) return
+
+            var count = 0
+            iteratePlaceholders(value, first.textRange.startOffset.inc()) { range ->
+                callback(count <= argCount, range, count, argCount)
+                count++
+            }
         }
     }
 
@@ -92,5 +81,19 @@ object FormatHelper {
             PsiTreeUtil.processElements(element, it)
             return it.collection
         }
+    }
+
+    fun createAnnotation(holder: AnnotationHolder, range: TextRange, textColor: Color? = null, fontType: Int = Font.PLAIN) {
+        createAnnotation(holder, range).enforcedTextAttributes(
+            TextAttributes(textColor, null, null, null, fontType)
+        ).create()
+    }
+
+    fun createAnnotation(holder: AnnotationHolder, range: TextRange): AnnotationBuilder {
+        return holder.newSilentAnnotation(HighlightSeverity.INFORMATION).range(range)
+    }
+
+    fun createWarning(holder: AnnotationHolder, message: String, range: TextRange) {
+        return holder.newAnnotation(HighlightSeverity.WEAK_WARNING, message).range(range).create()
     }
 }
