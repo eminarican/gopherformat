@@ -2,7 +2,10 @@ package com.eminarican.gopherformat.annotator
 
 import com.eminarican.gopherformat.FormatData
 import com.eminarican.gopherformat.FormatHelper
+import com.goide.GoLanguage
 import com.goide.highlighting.GoSyntaxHighlightingColors
+import com.goide.psi.GoCallExpr
+import com.goide.psi.GoStringLiteral
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.Annotator
 import com.intellij.openapi.util.TextRange
@@ -23,8 +26,10 @@ class LiteralAnnotator : Annotator {
             }
         }
 
-        FormatHelper.iteratePlaceholders(element.text, element.textRange.startOffset) { range ->
-            highlightPlaceholder(holder, range)
+        if (element.language is GoLanguage) return
+
+        FormatHelper.iterateSymbols(element.text, element.textRange.startOffset) { range ->
+            FormatHelper.highlightPlaceholder(holder, range)
         }
     }
 
@@ -46,9 +51,5 @@ class LiteralAnnotator : Annotator {
             return true
         }
         return false
-    }
-
-    private fun highlightPlaceholder(holder: AnnotationHolder, range: TextRange) {
-        FormatHelper.createAnnotation(holder, range).textAttributes(GoSyntaxHighlightingColors.VALID_STRING_ESCAPE).create()
     }
 }

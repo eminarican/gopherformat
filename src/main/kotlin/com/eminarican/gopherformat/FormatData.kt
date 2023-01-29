@@ -9,6 +9,8 @@ object FormatData {
     const val TAG_START_SIZE = "<>".length
     const val TAG_END_SIZE = "</>".length
 
+    const val FORMAT_FUNCTION = "Colourf"
+
     val HolderPattern: Pattern = Pattern.compile("%[bcdeEfFgGopqstTUvVxX]")
     val TagPattern: Pattern = Pattern.compile("<([\\w-]+)>(.*?)</\\1>")
 

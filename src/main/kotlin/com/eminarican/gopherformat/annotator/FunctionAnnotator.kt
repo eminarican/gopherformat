@@ -11,9 +11,11 @@ class FunctionAnnotator : Annotator {
 
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
         if (element !is GoCallExpr) return
+        if (!FormatHelper.isFormatFunction(element)) return
 
-        FormatHelper.iterateSymbols(element) { ok, range, index, count ->
+        FormatHelper.iterateFunctionSymbols(element) { ok, range, index, count ->
             if (!ok) addVerbWarning(holder, range, index, count)
+            FormatHelper.highlightPlaceholder(holder, range)
         }
     }
 

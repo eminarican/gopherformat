@@ -1,5 +1,6 @@
 package com.eminarican.gopherformat
 
+import com.goide.highlighting.GoSyntaxHighlightingColors
 import com.goide.psi.GoCallExpr
 import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.lang.annotation.AnnotationHolder
@@ -34,7 +35,7 @@ object FormatHelper {
         }
     }
 
-    fun iteratePlaceholders(
+    fun iterateSymbols(
         text: String, offset: Int,
         callback: (range: TextRange) -> Unit
     ) {
@@ -43,7 +44,7 @@ object FormatHelper {
         }
     }
 
-    fun iterateSymbols(
+    fun iterateFunctionSymbols(
         expression: GoCallExpr,
         callback: (ok: Boolean, range: TextRange, index: Int, count: Int) -> Unit
     ) {
@@ -52,13 +53,12 @@ object FormatHelper {
 
         first.value?.string?.let { value ->
             val verbCount = value.split(FormatData.HolderPattern).size - 1
+            val argCount = expressions.size - 1
+
             if (verbCount < 1) return
 
-            val argCount = expressions.size - 2
-            if (verbCount == argCount) return
-
-            var count = 0
-            iteratePlaceholders(value, first.textRange.startOffset.inc()) { range ->
+            var count = 1
+            iterateSymbols(value, first.textRange.startOffset.inc()) { range ->
                 callback(count <= argCount, range, count, argCount)
                 count++
             }
@@ -70,6 +70,10 @@ object FormatHelper {
             (it.startsWith("'") && it.endsWith("'")) ||
             (it.startsWith("\"") && it.endsWith("\""))
         }
+    }
+
+    fun isFormatFunction(element: GoCallExpr): Boolean {
+        return element.expression.text.contains(FormatData.FORMAT_FUNCTION)
     }
 
     fun findStringLiterals(element: PsiElement): Collection<PsiElement> {
@@ -95,5 +99,9 @@ object FormatHelper {
 
     fun createWarning(holder: AnnotationHolder, message: String, range: TextRange) {
         return holder.newAnnotation(HighlightSeverity.WEAK_WARNING, message).range(range).create()
+    }
+
+    fun highlightPlaceholder(holder: AnnotationHolder, range: TextRange) {
+        createAnnotation(holder, range).textAttributes(GoSyntaxHighlightingColors.VALID_STRING_ESCAPE).create()
     }
 }
