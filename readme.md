@@ -3,7 +3,7 @@
 gophertunnel text tag preview plugin for goland
 
 todo:
+  - add auto expand collapse for tags based on focus
   - scan configuration files for tags
-  - hide tags when not focused
   - highlight formatting signs
   - write a better readme :=
