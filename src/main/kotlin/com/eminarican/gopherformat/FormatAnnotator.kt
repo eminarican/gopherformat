@@ -1,6 +1,7 @@
 package com.eminarican.gopherformat
 
-import com.goide.psi.GoStringLiteral
+import com.goide.highlighting.GoSyntaxHighlightingColors
+import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.Annotator
 import com.intellij.lang.annotation.HighlightSeverity
@@ -13,15 +14,19 @@ import java.awt.Font
 class FormatAnnotator : Annotator {
 
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
-        if (element !is GoStringLiteral) return
+        if (!FormatHelper.isStringLiteral(element)) return
         var mixed = false
 
-        FormatHelper.iterate(element.text, element.textRange.startOffset) { rangeOut, _, key, offset ->
+        FormatHelper.iterateTags(element.text, element.textRange.startOffset) { rangeOut, _, key, offset ->
             !setColor(holder, key, rangeOut.shiftRight(offset))
             && !setFont(holder, key, rangeOut.shiftRight(offset), mixed).let {
                 if (it) mixed = true
-                return@let it
+                it
             }
+        }
+
+        FormatHelper.iteratePlaceholders(element.text, element.textRange.startOffset) { range ->
+            highlightPlaceholder(holder, range)
         }
     }
 
@@ -45,8 +50,17 @@ class FormatAnnotator : Annotator {
         return false
     }
 
+    private fun highlightPlaceholder(holder: AnnotationHolder, range: TextRange) {
+        createAnnotation(holder, range).textAttributes(GoSyntaxHighlightingColors.VALID_STRING_ESCAPE).create()
+    }
+
     private fun createAnnotation(holder: AnnotationHolder, range: TextRange, textColor: Color? = null, fontType: Int = Font.PLAIN) {
-        holder.newSilentAnnotation(HighlightSeverity.INFORMATION).range(range)
-            .enforcedTextAttributes(TextAttributes(textColor, null, null, null, fontType)).create()
+        createAnnotation(holder, range).enforcedTextAttributes(
+            TextAttributes(textColor, null, null, null, fontType)
+        ).create()
+    }
+
+    private fun createAnnotation(holder: AnnotationHolder, range: TextRange): AnnotationBuilder {
+        return holder.newSilentAnnotation(HighlightSeverity.INFORMATION).range(range)
     }
 }

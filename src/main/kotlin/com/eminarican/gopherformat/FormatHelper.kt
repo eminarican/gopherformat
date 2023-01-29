@@ -1,6 +1,9 @@
 package com.eminarican.gopherformat
 
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiElement
+import com.intellij.psi.search.PsiElementProcessor
+import com.intellij.psi.util.PsiTreeUtil
 import java.awt.Color
 import java.awt.Font
 import java.util.regex.Pattern
@@ -10,7 +13,8 @@ object FormatHelper {
     const val TAG_START_SIZE = "<>".length
     const val TAG_END_SIZE = "</>".length
 
-    private val pattern: Pattern = Pattern.compile("<([\\w-]+)>(.*?)</\\1>")
+    private val holderPattern: Pattern = Pattern.compile("%v")
+    private val tagPattern: Pattern = Pattern.compile("<([\\w-]+)>(.*?)</\\1>")
 
     val colorCode = mapOf(
         "black" to Color(0, 0, 0),
@@ -39,11 +43,11 @@ object FormatHelper {
         "italic" to Font.ITALIC,
     )
 
-    fun iterate(
+    fun iterateTags(
         text: String, offset: Int,
         callback: (rangeOut: TextRange, rangeIn: TextRange, key: String, offset: Int) -> Boolean
     ) {
-        val matcher = pattern.matcher(text)
+        val matcher = tagPattern.matcher(text)
 
         while (matcher.find()) {
             val key = matcher.group(1)
@@ -57,7 +61,36 @@ object FormatHelper {
             val content = text.substring(rangeIn.startOffset, rangeIn.endOffset)
             if (callback(rangeOut, rangeIn, key, offset)) continue
 
-            iterate(content, rangeIn.startOffset + offset, callback)
+            iterateTags(content, rangeIn.startOffset + offset, callback)
+        }
+    }
+
+    fun iteratePlaceholders(
+        text: String, offset: Int,
+        callback: (range: TextRange) -> Unit
+    ) {
+        val matcher = holderPattern.matcher(text)
+
+        while (matcher.find()) {
+            callback(TextRange(matcher.start(), matcher.end()).shiftRight(offset))
+        }
+    }
+
+    fun isStringLiteral(element: PsiElement): Boolean {
+        return element.text.let {
+            (it.startsWith("'") && it.endsWith("'")) ||
+            (it.startsWith("\"") && it.endsWith("\""))
+        }
+    }
+
+    fun findStringLiterals(element: PsiElement): Collection<PsiElement> {
+        object : PsiElementProcessor.CollectElements<PsiElement>() {
+            override fun execute(each: PsiElement): Boolean {
+                return if (isStringLiteral(each)) false else super.execute(each)
+            }
+        }.let {
+            PsiTreeUtil.processElements(element, it)
+            return it.collection
         }
     }
 }
